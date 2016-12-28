@@ -1,0 +1,7 @@
+# ignore all but the venv setup - meaning all subdirectories (including venv)
+
+/data
+
+.DS_Store
+*.pyc
+*.swp
