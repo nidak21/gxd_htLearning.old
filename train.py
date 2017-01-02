@@ -7,7 +7,7 @@ Try to classify them as 'yes' or 'no' (relevant to GXD or not)
 """
 # Author: Jim Kadin
 
-import sys
+#import sys
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import Perceptron
@@ -15,36 +15,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.datasets import load_files
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-
-# move to helper library
-def orderTargets( bunch,	# dict w/ keys: target_names (list of names)
-				#    target (list of indexes into target_names)
-		  targetOrder	# list, reordering of the target_names
-    ):
-    ''' reorder the target labels in a sklearn bunch so the do not
-        depend on the label alpha order.
-    '''
-    targetMapping = []
-    for t in bunch.target_names:
-	targetMapping.append( targetOrder.index(t) )
-
-    for n in range(len(bunch.target)):
-	bunch.target[n] = targetMapping[ bunch.target[n] ]
-
-    bunch.target_names = targetOrder
-# end orderTargets
+from gxd_htLearningLib import getTrainingSet, getFormatedMetrics
 
 
+dataset = getTrainingSet()
 
-# The training data folder must be passed as first argument
-data_folder = sys.argv[1]
-dataset = load_files(data_folder)
-orderTargets(dataset, ['yes', 'no'])
-
-# Split the dataset in training and test set:
-docs_train, docs_test, y_train, y_test = train_test_split(
-				dataset.data, dataset.target, test_size=0.5)
-
+docs_train, docs_test, y_train, y_test = train_test_split( dataset.data,
+						dataset.target, test_size=0.5)
 
 # TASK: Build a vectorizer that splits strings into sequence of 1 to 3
 # characters instead of word tokens. 1, 2, and 3 word ngrams.
@@ -63,16 +40,11 @@ clf = clf.fit( docs_train, y_train )
 y_predicted = clf.predict( docs_test )
 
 # Print the classification report
-print(metrics.classification_report(y_test, y_predicted,
-                                    target_names=dataset.target_names))
-
-# Plot the confusion matrix
-print dataset.target_names
-cm = metrics.confusion_matrix(y_test, y_predicted)
-print(cm)
+print getFormatedMetrics(y_test, y_predicted, dataset.target_names)
 
 # display confusion matrix as a plot
 import matplotlib.pyplot as plt
+cm = metrics.confusion_matrix(y_test, y_predicted)
 if False: # simple view
     plt.matshow(cm, cmap=plt.cm.jet)
     plt.show()
