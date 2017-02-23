@@ -18,10 +18,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.datasets import load_files
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV
-#from sklearn import metrics
+from sklearn.metrics import fbeta_score, make_scorer, f1_score, \
+		confusion_matrix, classification_report
 
 from gxd_htLearningLib import getTrainingSet, getFormatedMetrics
-
 
 dataset = getTrainingSet()
 
@@ -38,7 +38,7 @@ vectorizerParams = {
 		  }
 
 # define classifiers and their params to optimize over
-classifiers = [ 
+classifiers = [
 		('Perceptron'    , Perceptron(),    {} ),
 		('MultinomialNB' , MultinomialNB(), {}),
 		('SGDClassifier' , SGDClassifier(loss='hinge', penalty='l2',
@@ -46,15 +46,20 @@ classifiers = [
 					{'clf__n_iter': [5,7,10]} ),
 	      ]
 
+MYBETA=4
+fScorer = make_scorer(fbeta_score, beta=MYBETA, pos_label=1)
+
 for classifierName, clf, params in classifiers:
     print
     print classifierName
     params.update(vectorizerParams ) # merge vectorizer & classifier params
-    
-    gs = GridSearchCV( Pipeline( [('vect', cv), ('clf', clf)] ), params )
+
+    gs = GridSearchCV( Pipeline( [('vect', cv), ('clf', clf)] ), params,
+                        scoring=fScorer )
 
     gsout = gs.fit(docs_train, y_train)
-    print gsout.best_score_
+    print "Score of best estimator on the left out cross validation set: %f\n" \
+		    %   gsout.best_score_,
     print gsout.best_params_
 
     trainedClf = gs.best_estimator_
@@ -62,4 +67,16 @@ for classifierName, clf, params in classifiers:
     # TASK: Predict the outcome on the testing set
     y_predicted = trainedClf.predict( docs_test )
 
-    print getFormatedMetrics( y_test, y_predicted, dataset.target_names )
+    print getFormatedMetrics( y_test, y_predicted, "foo", "blah"),
+
+    #print  classification_report(y_test, y_predicted, labels=[1],target_names=["no"]) 
+    #print confusion_matrix(y_test,y_predicted, labels=[0,1])
+
+
+    print "F1:  %5.3f" % f1_score(y_test, y_predicted, pos_label=1)
+    print "F%d:  %5.3f" % (2,
+		    fbeta_score(y_test, y_predicted, beta=2, pos_label=1) )
+    print "F%d:  %5.3f" % (3,
+		    fbeta_score(y_test, y_predicted, beta=3, pos_label=1) )
+    print "F%d:  %5.3f" % (MYBETA,
+		    fbeta_score(y_test, y_predicted, beta=MYBETA, pos_label=1) )
